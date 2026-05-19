@@ -1,10 +1,8 @@
 #version 150
 
-/* Composite Vertex */
-
-out vec2 uv;
+out vec2 texCoord;
 
 void main() {
-    uv = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1) * 2.0;
-    gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
+    texCoord = vec2(gl_VertexID & 1, (gl_VertexID >> 1) & 1);
+    gl_Position = vec4(texCoord * 2.0 - 1.0, 0.0, 1.0);
 }

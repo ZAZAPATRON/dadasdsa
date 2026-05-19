@@ -1,12 +1,11 @@
 #version 150
 
-/* Composite Fragment */
-
-in vec2 uv;
-out vec4 FragColor;
+in vec2 texCoord;
 
 uniform sampler2D colortex0;
 
+out vec4 FragColor;
+
 void main() {
-    FragColor = texture(colortex0, uv);
+    FragColor = texture(colortex0, texCoord);
 }

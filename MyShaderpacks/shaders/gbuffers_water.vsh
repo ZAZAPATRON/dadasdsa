@@ -1,39 +1,17 @@
 #version 150
-#extension GL_ARB_explicit_attrib_location : enable
 
-/* Water Vertex - Mellow Style */
+in vec3 Position;
+in vec4 Color;
+in vec2 UV0;
 
-layout(location = 0) in vec3 Position;
-layout(location = 1) in vec4 Color;
-layout(location = 2) in vec2 UV0;
-layout(location = 3) in vec2 UV1;
-layout(location = 4) in vec3 Normal;
-
-out DATA {
-    vec4 col;
-    vec2 uv0;
-    vec2 uv1;
-    vec3 normal;
-    vec3 viewPos;
-} data;
+out vec4 vertexColor;
+out vec2 texCoord;
 
 uniform mat4 ModelViewMat;
 uniform mat4 ProjectionMat;
-uniform mat3 NormalMat;
-uniform float GameTime;
 
 void main() {
-    vec3 pos = Position;
-    
-    // Water wave animation
-    pos.y += sin(pos.x * 0.1 + GameTime) * 0.02;
-    pos.y += cos(pos.z * 0.1 + GameTime) * 0.02;
-    
-    data.col = Color;
-    data.uv0 = UV0;
-    data.uv1 = UV1;
-    data.normal = normalize(NormalMat * Normal);
-    data.viewPos = vec3(ModelViewMat * vec4(pos, 1.0));
-    
-    gl_Position = ProjectionMat * (ModelViewMat * vec4(pos, 1.0));
+    gl_Position = ProjectionMat * (ModelViewMat * vec4(Position, 1.0));
+    vertexColor = Color;
+    texCoord = UV0;
 }
