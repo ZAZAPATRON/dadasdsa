@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. Otonom Arayüz</title>
+    <style>
+        :root {
+            --jarvis-blue: #00f3ff;
+            --jarvis-dark: #050a0f;
+            --jarvis-panel: rgba(0, 40, 60, 0.6);
+        }
+        
+        body {
+            background-color: var(--jarvis-dark);
+            color: var(--jarvis-blue);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--jarvis-blue);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--jarvis-blue);
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            height: calc(100% - 80px);
+        }
+
+        .sidebar {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--jarvis-panel);
+            border: 1px solid var(--jarvis-blue);
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .panel-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.5);
+            padding-bottom: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        input[type="password"], input[type="text"], select {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--jarvis-blue);
+            color: var(--jarvis-blue);
+            padding: 5px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        
+        select option {
+            background-color: var(--jarvis-dark);
+            color: var(--jarvis-blue);
+        }
+
+        button {
+            background: rgba(0, 243, 255, 0.1);
+            color: var(--jarvis-blue);
+            border: 1px solid var(--jarvis-blue);
+            padding: 8px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background: var(--jarvis-blue);
+            color: var(--jarvis-dark);
+            box-shadow: 0 0 15px var(--jarvis-blue);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            background: var(--jarvis-panel);
+            border: 1px solid var(--jarvis-blue);
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-left: 3px solid var(--jarvis-blue);
+            background: rgba(0, 243, 255, 0.05);
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            border-left: none;
+            border-right: 3px solid #ffaa00;
+            text-align: right;
+            background: rgba(255, 170, 0, 0.05);
+            color: #ffaa00;
+        }
+
+        .message.system-log {
+            border-left: 3px solid #ff0055;
+            color: #ff3366;
+            font-size: 12px;
+            background: rgba(255, 0, 85, 0.05);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .controls input {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 16px;
+        }
+
+        .btn-mic {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: #ff3333;
+            color: #ff3333;
+            width: auto;
+            padding: 0 20px;
+        }
+        
+        .btn-mic.recording {
+            background: #ff3333;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); }
+        }
+
+        .widget-area {
+            height: 250px;
+            display: none;
+            border: 1px solid var(--jarvis-blue);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">J.A.R.V.I.S. Otonom Arayüz</div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="panel">
+                <div class="panel-title">API YAPILANDIRMASI</div>
+                
+                <div class="input-group">
+                    <label>Gemini API Key</label>
+                    <input type="password" id="geminiKey" placeholder="AI Studio'dan alın...">
+                </div>
+                
+                <div class="input-group">
+                    <label>Groq API Key</label>
+                    <input type="password" id="groqKey" placeholder="Groq Konsolundan alın...">
+                </div>
+
+                <div class="input-group">
+                    <label>Grok (xAI) API Key</label>
+                    <input type="password" id="grokKey" placeholder="xAI platformundan alın...">
+                </div>
+                
+                <div class="input-group">
+                    <label>Birincil AI Modeli</label>
+                    <select id="activeModel">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="groq">Groq (Llama vs)</option>
+                        <option value="grok">Grok (xAI)</option>
+                    </select>
+                </div>
+                
+                <button onclick="saveKeys()">Yapılandırmayı Kaydet</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">MODÜLLER</div>
+                <button onclick="openMap('İstanbul')">Harita Başlat</button>
+                <button onclick="openSearch('Teknoloji')">Web Araması</button>
+                <button onclick="clearChat()">Terminali Temizle</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="widget-area" id="widgetArea"></div>
+
+            <div class="chat-box" id="chatBox">
+                <div class="message">Sistem başlatıldı. Otonom hata düzeltme protokolü aktif.</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-mic" id="micBtn" onclick="toggleMic()">🎤 SES</button>
+                <input type="text" id="userInput" placeholder="Komut girin...">
+                <button onclick="processInput()" style="width: 150px;">GÖNDER</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            document.getElementById('geminiKey').value = localStorage.getItem('geminiKey') || '';
+            document.getElementById('groqKey').value = localStorage.getItem('groqKey') || '';
+            document.getElementById('grokKey').value = localStorage.getItem('grokKey') || '';
+            document.getElementById('activeModel').value = localStorage.getItem('activeModel') || 'gemini';
+        };
+
+        function saveKeys() {
+            localStorage.setItem('geminiKey', document.getElementById('geminiKey').value);
+            localStorage.setItem('groqKey', document.getElementById('groqKey').value);
+            localStorage.setItem('grokKey', document.getElementById('grokKey').value);
+            localStorage.setItem('activeModel', document.getElementById('activeModel').value);
+            addMessage("Jarvis", "Ayarlar kaydedildi.");
+            speak("Sistem ayarları güncellendi.");
+        }
+
+        document.getElementById("userInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") processInput();
+        });
+
+        function addMessage(sender, text, type = '') {
+            const chatBox = document.getElementById('chatBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender === 'User' ? 'user' : ''} ${type}`;
+            msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.pitch = 0.8;
+            utterance.rate = 1.1; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // SES TANIMA
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isRecording = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.onresult = (e) => {
+                document.getElementById('userInput').value = e.results[0][0].transcript;
+                processInput();
+            };
+            recognition.onend = () => {
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+                document.getElementById('micBtn').innerText = "🎤 SES";
+            };
+        }
+
+        function toggleMic() {
+            if (!recognition) return;
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isRecording = true;
+                document.getElementById('micBtn').classList.add('recording');
+                document.getElementById('micBtn').innerText = "🔴 DİNLİYOR...";
+            }
+        }
+
+        // OTONOM İŞLEM KONTROLÜ (Hata Düzeltmeli)
+        async function processInput() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) return;
+
+            addMessage("User", input);
+            document.getElementById('userInput').value = '';
+
+            const lowerInput = input.toLowerCase();
+
+            if (lowerInput.includes("haritada") || lowerInput.includes("harita aç")) {
+                const loc = input.replace(/haritada|göster|harita aç/gi, '').trim();
+                openMap(loc || 'Türkiye');
+                addMessage("Jarvis", `${loc || 'Türkiye'} haritada gösteriliyor.`);
+                return;
+            }
+
+            if (lowerInput.includes("internette ara") || lowerInput.includes("web'de ara")) {
+                const query = input.replace(/internette ara|web'de ara/gi, '').trim();
+                openSearch(query);
+                addMessage("Jarvis", `"${query}" için web araması yapılıyor.`);
+                return;
+            }
+
+            // Sırasıyla denenecek AI modelleri
+            let preferredModel = document.getElementById('activeModel').value;
+            let modelsToTry = [preferredModel];
+            ['gemini', 'groq', 'grok'].forEach(m => {
+                if(!modelsToTry.includes(m)) modelsToTry.push(m);
+            });
+
+            addMessage("Jarvis", "Düşünüyor...");
+
+            let success = false;
+            let finalResponse = "";
+
+            // Otonom Hata Düzeltme Döngüsü
+            for (let model of modelsToTry) {
+                try {
+                    if (model === 'gemini') finalResponse = await callGemini(input);
+                    else if (model === 'groq') finalResponse = await callGroq(input);
+                    else if (model === 'grok') finalResponse = await callGrok(input);
+
+                    success = true;
+                    break; // Başarılı olursa döngüden çık
+                } catch (err) {
+                    addMessage("OTONOM SİSTEM", `${model.toUpperCase()} modelinde hata alındı: ${err.message}. Alternatif modele geçiliyor...`, "system-log");
+                }
+            }
+
+            // Yükleniyor mesajını temizle
+            const chatBox = document.getElementById('chatBox');
+            chatBox.removeChild(chatBox.lastChild);
+
+            if (success) {
+                addMessage("Jarvis", finalResponse);
+                speak(finalResponse);
+            } else {
+                const failMsg = "Tüm AI servisleri ve yedek bağlantılar başarısız oldu. Lütfen API anahtarlarınızı kontrol edin.";
+                addMessage("Jarvis", failMsg);
+                speak("Tüm sistemlerde bağlantı hatası yaşandı.");
+            }
+        }
+
+        // GEMINI API
+        async function callGemini(prompt) {
+            const key = document.getElementById('geminiKey').value;
+            if(!key) throw new Error("API Anahtarı Yok");
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "Sen Jarvis adında akıllı bir asistansın. Kısa ve net cevap ver: " + prompt }] }]
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // GROQ API
+        async function callGroq(prompt) {
+            const key = document.getElementById('groqKey').value;
+            if(!key) throw new Error("API Anahtarı Yok");
+
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{role: "system", content: "Sen Jarvis'sin."}, {role: "user", content: prompt}]
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.choices[0].message.content;
+        }
+
+        // GROK API
+        async function callGrok(prompt) {
+            const key = document.getElementById('grokKey').value;
+            if(!key) throw new Error("API Anahtarı Yok");
+
+            const res = await fetch("https://api.x.ai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "grok-beta",
+                    messages: [{role: "system", content: "Sen Jarvis'sin."}, {role: "user", content: prompt}]
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.choices[0].message.content;
+        }
+
+        function openMap(loc) {
+            const w = document.getElementById('widgetArea');
+            w.style.display = 'block';
+            w.innerHTML = `<iframe src="https://nominatim.openstreetmap.org/ui/search.html?q=${encodeURIComponent(loc)}"></iframe>`;
+        }
+
+        function openSearch(q) {
+            const w = document.getElementById('widgetArea');
+            w.style.display = 'block';
+            w.innerHTML = `<iframe src="https://duckduckgo.com/search.html?q=${encodeURIComponent(q)}&kp=-2"></iframe>`;
+        }
+
+        function clearChat() {
+            document.getElementById('chatBox').innerHTML = '<div class="message">Terminal temizlendi.</div>';
+            document.getElementById('widgetArea').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
