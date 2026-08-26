@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. AI Interface</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #030a16; color: #00f0ff; min-height: 100vh; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 900px; background: rgba(5, 15, 35, 0.85); border: 1px solid #00f0ff; border-radius: 12px; padding: 20px; box-shadow: 0 0 25px rgba(0, 240, 255, 0.2); }
+        h1 { text-align: center; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px #00f0ff; margin-bottom: 20px; }
+        .api-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; }
+        input, select, button { background: #081b33; border: 1px solid #00a8ff; color: #fff; padding: 10px; border-radius: 6px; outline: none; }
+        input:focus { border-color: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+        .chat-box { height: 350px; overflow-y: auto; border: 1px solid rgba(0, 240, 255, 0.3); padding: 15px; border-radius: 8px; background: rgba(2, 8, 20, 0.6); margin-bottom: 20px; }
+        .msg { margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; max-width: 80%; }
+        .user-msg { background: rgba(0, 168, 255, 0.2); border-left: 3px solid #00a8ff; margin-left: auto; color: #e0f7ff; }
+        .jarvis-msg { background: rgba(0, 240, 255, 0.1); border-left: 3px solid #00f0ff; color: #00f0ff; }
+        .input-group { display: flex; gap: 10px; }
+        .input-group input { flex: 1; }
+        button { cursor: pointer; background: #005580; color: #00f0ff; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #00a8ff; color: #000; box-shadow: 0 0 12px #00a8ff; }
+        .quick-actions { display: flex; gap: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>J.A.R.V.I.S. System Control</h1>
+
+    <!-- API Keys Configuration -->
+    <div class="api-panel">
+        <div>
+            <label>Model Seçimi:</label>
+            <select id="modelSelect" style="width: 100%; margin-top: 5px;">
+                <option value="groq">Groq AI (Llama 3)</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="grok">xAI (Grok)</option>
+            </select>
+        </div>
+        <div>
+            <label>Groq API Key:</label>
+            <input type="password" id="groqKey" placeholder="gsk_..." style="width: 100%;">
+        </div>
+        <div>
+            <label>Gemini API Key:</label>
+            <input type="password" id="geminiKey" placeholder="AIzaSy..." style="width: 100%;">
+        </div>
+        <div>
+            <label>Grok API Key:</label>
+            <input type="password" id="grokKey" placeholder="xai-..." style="width: 100%;">
+        </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div class="chat-box" id="chatBox">
+        <div class="msg jarvis-msg">Sistemler çevrimiçi. Çekirdek protokoller aktif, efendim. Size nasıl yardımcı olabilirim?</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="input-group">
+        <input type="text" id="userInput" placeholder="Komut veya soru girin..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Gönder</button>
+    </div>
+
+    <!-- Entegre Araçlar -->
+    <div class="quick-actions">
+        <button onclick="searchWeb()" style="flex:1;">🌐 Web'de Ara</button>
+        <button onclick="openMap()" style="flex:1;">🗺️ Haritada Bul</button>
+    </div>
+</div>
+
+<script>
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function addMessage(sender, text) {
+        const chatBox = document.getElementById('chatBox');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${sender === 'user' ? 'user-msg' : 'jarvis-msg'}`;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        addMessage('user', text);
+        input.value = '';
+
+        const model = document.getElementById('modelSelect').value;
+        let responseText = "";
+
+        try {
+            if (model === 'groq') {
+                const apiKey = document.getElementById('groqKey').value;
+                if(!apiKey) throw new Error("Groq API anahtarı eksik!");
+                
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "system", content: "Sen JARVIS'sin. Kısa, resmi ve yardımcı Türkçe yanıtlar ver." }, { role: "user", content: text }]
+                    })
+                });
+                const data = await res.json();
+                responseText = data.choices[0].message.content;
+
+            } else if (model === 'gemini') {
+                const apiKey = document.getElementById('geminiKey').value;
+                if(!apiKey) throw new Error("Gemini API anahtarı eksik!");
+
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
+                });
+                const data = await res.json();
+                responseText = data.candidates[0].content.parts[0].text;
+
+            } else if (model === 'grok') {
+                const apiKey = document.getElementById('grokKey').value;
+                if(!apiKey) throw new Error("Grok API anahtarı eksik!");
+
+                const res = await fetch('https://api.x.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "grok-beta",
+                        messages: [{ role: "system", content: "Sen JARVIS'sin." }, { role: "user", content: text }]
+                    })
+                });
+                const data = await res.json();
+                responseText = data.choices[0].message.content;
+            }
+
+            addMessage('jarvis', responseText);
+            speak(responseText);
+
+        } catch (err) {
+            const errText = `Hata: ${err.message}`;
+            addMessage('jarvis', errText);
+            speak("Bir hata oluştu efendim.");
+        }
+    }
+
+    function searchWeb() {
+        const query = document.getElementById('userInput').value || prompt("Aranacak terim:");
+        if (query) window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
+
+    function openMap() {
+        const location = document.getElementById('userInput').value || prompt("Aranacak konum:");
+        if (location) window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(location)}`, '_blank');
+    }
+</script>
+</body>
+</html>
